@@ -1,0 +1,14 @@
+0	aachen
+1	berlin
+2	bielefeld
+3	bremen
+4	cologne
+5	dusseldorf
+6	frankfurt
+7	hamburg
+8	hanover
+9	mainz
+10	munich
+11	munster
+12	strasbourg
+13	stuttgart
