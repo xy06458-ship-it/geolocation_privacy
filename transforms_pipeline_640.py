@@ -225,16 +225,48 @@ def run_fkl(images, exp_name):
     print(f"  [{exp_name}] FID={fv:.4f} KID={kv:.6f} LPIPS={lv:.4f} n={valid}")
     return {'fid':round(fv,4),'kid':round(kv,6),'lpips':round(lv,4),'n':valid,'missing':miss}
 
+def resolve_csv_image_path(path_value):
+    image_path = Path(path_value)
+
+    if not image_path.is_absolute():
+        image_path = DATA_ROOT / image_path
+
+    return str(image_path)
+
+
 def collect():
-    om={}
-    with open(ORIG_CSV) as f:
-        for r in csv.DictReader(f): om[os.path.basename(r['path'])]=r['path']
-    imgs=[]
-    with open(CSV_640) as f:
-        for r in csv.DictReader(f):
-            fn=os.path.basename(r['path'])
-            if fn in om: imgs.append({'path':r['path'],'orig_path':om[fn],'city':r['city'],'label':int(r['label']),'fname':fn})
-    return imgs[START_IDX:MAX_IMAGES]
+    orig_map = {}
+
+    with ORIG_CSV.open(
+        'r', encoding='utf-8-sig', newline=''
+    ) as f:
+        for row in csv.DictReader(f):
+            orig_path = resolve_csv_image_path(row['path'])
+            filename = os.path.basename(orig_path)
+            orig_map[filename] = orig_path
+
+    images = []
+
+    with CSV_640.open(
+        'r', encoding='utf-8-sig', newline=''
+    ) as f:
+        for row in csv.DictReader(f):
+            image_path = resolve_csv_image_path(row['path'])
+            filename = os.path.basename(image_path)
+
+            if filename not in orig_map:
+                print(f'[警告] 找不到对应原图：{filename}')
+                continue
+
+            images.append({
+                'path': image_path,
+                'orig_path': orig_map[filename],
+                'city': row['city'],
+                'label': int(row['label']),
+                'fname': filename,
+            })
+
+    return images[START_IDX:MAX_IMAGES]
 
 def main():
     os.makedirs(OUTPUT_ROOT, exist_ok=True)
