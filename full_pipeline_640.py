@@ -13,24 +13,31 @@ import clip
 from tqdm import tqdm
 from pathlib import Path
  
-# ── 项目路径：换电脑时保持下面的目录结构即可，不再写死本机绝对路径 ──
 PROJECT_ROOT = Path(__file__).resolve().parent
+
+SPLIT_ROOT = PROJECT_ROOT / 'splits' / 'cityscapes'
+DATA_ROOT = PROJECT_ROOT / 'data' / 'cityscapes'
+
 EXTERNAL_METHODS_DIR = PROJECT_ROOT / 'external_methods'
 BISENET_ROOT = EXTERNAL_METHODS_DIR / 'bisenetv2'
 ATTACK_BACKEND_DIR = EXTERNAL_METHODS_DIR / 'attack_backend'
-DATA_ROOT = PROJECT_ROOT / 'data' / 'cityscapes'
 
 sys.path.insert(0, str(EXTERNAL_METHODS_DIR))
 sys.path.insert(0, str(BISENET_ROOT))
 sys.path.insert(0, str(ATTACK_BACKEND_DIR))
 
-BISENET_WEIGHT = BISENET_ROOT / 'weights' / 'model_final_v2_city.pth'
-BISENET_CONFIG = BISENET_ROOT / 'configs' / 'bisenetv2_city.py'
+BISENET_WEIGHT = (
+    BISENET_ROOT / 'weights' / 'model_final_v2_city.pth'
+)
+BISENET_CONFIG = (
+    BISENET_ROOT / 'configs' / 'bisenetv2_city.py'
+)
+
 CLASSIFIER_DIR = DATA_ROOT / 'city_classifier'
 OUTPUT_ROOT = DATA_ROOT / '640' / 'results_batch'
 
-ORIG_CSV = DATA_ROOT / 'test_list.csv'
-CSV_640 = DATA_ROOT / '640' / 'test_list_640.csv'
+ORIG_CSV = SPLIT_ROOT / 'test_list.csv'
+CSV_640 = SPLIT_ROOT / 'test_list_640.csv'
  
 ATTACK_SIZE = (640, 640)
 DEVICE      = torch.device('cuda')
