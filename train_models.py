@@ -6,34 +6,54 @@ from PIL import Image
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-OUT_DIR = PROJECT_ROOT /'data'/'city_classifier'
-OUT_DIR.mkdir(parents=True, exist_ok=True)
-BATCH_SIZE = 32
-DEVICE     = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-with open(os.path.join(OUT_DIR, 'city2idx.txt')) as f:
-    NUM_CLASSES = len(f.readlines())
+SPLIT_ROOT = PROJECT_ROOT / 'splits' / 'cityscapes'
+DATA_ROOT = PROJECT_ROOT / 'data' / 'cityscapes'
+CLASSIFIER_DIR = DATA_ROOT / 'city_classifier'
+
+CITY2IDX_PATH = SPLIT_ROOT / 'city2idx.txt'
+TRAIN_CSV = SPLIT_ROOT / 'train_list.csv'
+TEST_CSV = SPLIT_ROOT / 'test_list.csv'
+
+CLASSIFIER_DIR.mkdir(parents=True, exist_ok=True)
+
+BATCH_SIZE = 32
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+with CITY2IDX_PATH.open('r', encoding='utf-8-sig') as f:
+    NUM_CLASSES = sum(1 for line in f if line.strip())
 
 print(f"Device: {DEVICE}")
 print(f"Number of cities: {NUM_CLASSES}")
 
 
 class CityDataset(Dataset):
-    def __init__(self, csv_path, transform):
+    def __init__(self, csv_path, data_root, transform):
         self.data = []
-        with open(csv_path) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                self.data.append((row['path'], int(row['label'])))
         self.transform = transform
+
+        with Path(csv_path).open(
+            'r', encoding='utf-8-sig', newline=''
+        ) as f:
+            reader = csv.DictReader(f)
+
+            for row in reader:
+                image_path = Path(row['path'])
+
+                if not image_path.is_absolute():
+                    image_path = Path(data_root) / image_path
+
+                self.data.append(
+                    (image_path, int(row['label']))
+                )
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        path, label = self.data[idx]
-        img = Image.open(path).convert('RGB')
-        return self.transform(img), label
+        image_path, label = self.data[idx]
+        image = Image.open(image_path).convert('RGB')
+        return self.transform(image), label
 
 transform_train = transforms.Compose([
     transforms.Resize((256, 256)),
@@ -49,8 +69,17 @@ transform_test = transforms.Compose([
     transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])
 ])
 
-train_dataset = CityDataset(os.path.join(OUT_DIR,'train_list.csv'), transform_train)
-test_dataset  = CityDataset(os.path.join(OUT_DIR,'test_list.csv'),  transform_test)
+train_dataset = CityDataset(
+    TRAIN_CSV,
+    DATA_ROOT,
+    transform_train
+)
+
+test_dataset = CityDataset(
+    TEST_CSV,
+    DATA_ROOT,
+    transform_test
+)
 train_loader  = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,  num_workers=4)
 test_loader   = DataLoader(test_dataset,  batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
